@@ -9,7 +9,8 @@ const port = process.env.PORT || 8000;
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
 
 // Configuração do PostgreSQL
 const dbConfig = {
@@ -138,6 +139,11 @@ app.get('/api/avaliacoes', async (req, res) => {
     } finally {
         await client.end();
     }
+});
+
+// Rota raiz - serve o arquivo HTML principal
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'coletor.html'));
 });
 
 app.listen(port, () => {
