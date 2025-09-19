@@ -57,6 +57,9 @@
         .photo-preview .remove-photo { position: absolute; top: 5px; right: 5px; background: rgba(244, 67, 54, 0.9); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 12px; }
         input[type="file"] { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; background: white; cursor: pointer; }
         input[type="file"]:focus { border-color: var(--primary-green); outline: none; }
+        .photo-loading { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); color: #f57c00; padding: 15px; border-radius: 8px; text-align: center; font-weight: 600; border: 2px solid #ff9800; }
+        .photo-success { background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c8 100%); color: var(--primary-green); padding: 10px; border-radius: 8px; text-align: center; font-weight: 600; border: 2px solid var(--primary-green); font-size: 0.9em; margin-top: 5px; }
+        .photo-error { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #f44336; padding: 10px; border-radius: 8px; text-align: center; font-weight: 600; border: 2px solid #f44336; font-size: 0.9em; margin-top: 5px; }
         @media (max-width: 768px) { body{padding:15px} .form-grid{grid-template-columns:1fr} .conformidades-grid{grid-template-columns:1fr} .app-header h1{font-size:1.8em} }
     </style>
 </head>
@@ -624,13 +627,27 @@
             fotoAreaInput.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    previewFotoArea.innerHTML = '<img src="" alt="Preview Foto Área"><button class="remove-photo" onclick="removePhoto(\'area\')">×</button>';
+                    // Mostrar preview local imediatamente
+                    previewFotoArea.innerHTML = '<img src="" alt="Preview Foto Área"><button class="remove-photo" onclick="removePhoto(\'area\')">×</button><div id="statusFotoArea"></div>';
                     const img = previewFotoArea.querySelector('img');
                     img.src = URL.createObjectURL(file);
                     
                     // Upload para Azure Blob (quando estiver online)
                     if (isOnline) {
+                        const statusDiv = document.getElementById('statusFotoArea');
+                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando foto da área...</div>';
+                        
                         fotoAreaUrl = await uploadPhotoToAzure(file, 'area');
+                        
+                        if (fotoAreaUrl) {
+                            statusDiv.innerHTML = '<div class="photo-success">✅ Foto da área enviada!</div>';
+                            setTimeout(() => statusDiv.innerHTML = '', 3000);
+                        } else {
+                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro ao enviar foto da área</div>';
+                        }
+                    } else {
+                        const statusDiv = document.getElementById('statusFotoArea');
+                        statusDiv.innerHTML = '<div class="photo-loading">📱 Foto salva - será enviada quando online</div>';
                     }
                 }
             });
@@ -639,13 +656,27 @@
             fotoLinhaInput.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    previewFotoLinha.innerHTML = '<img src="" alt="Preview Foto Linha"><button class="remove-photo" onclick="removePhoto(\'linha\')">×</button>';
+                    // Mostrar preview local imediatamente
+                    previewFotoLinha.innerHTML = '<img src="" alt="Preview Foto Linha"><button class="remove-photo" onclick="removePhoto(\'linha\')">×</button><div id="statusFotoLinha"></div>';
                     const img = previewFotoLinha.querySelector('img');
                     img.src = URL.createObjectURL(file);
                     
                     // Upload para Azure Blob (quando estiver online)
                     if (isOnline) {
+                        const statusDiv = document.getElementById('statusFotoLinha');
+                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando foto da linha...</div>';
+                        
                         fotoLinhaUrl = await uploadPhotoToAzure(file, 'linha');
+                        
+                        if (fotoLinhaUrl) {
+                            statusDiv.innerHTML = '<div class="photo-success">✅ Foto da linha enviada!</div>';
+                            setTimeout(() => statusDiv.innerHTML = '', 3000);
+                        } else {
+                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro ao enviar foto da linha</div>';
+                        }
+                    } else {
+                        const statusDiv = document.getElementById('statusFotoLinha');
+                        statusDiv.innerHTML = '<div class="photo-loading">📱 Foto salva - será enviada quando online</div>';
                     }
                 }
             });
