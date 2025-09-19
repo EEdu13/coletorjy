@@ -6,6 +6,8 @@
     <title>Avaliação de Sobrevivência - PWA</title>
     <meta name="theme-color" content="#7CB342" />
     <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="ChatGPT Image 19 de set. de 2025, 09_16_46.png" />
+    <link rel="apple-touch-icon" href="ChatGPT Image 19 de set. de 2025, 09_16_46.png" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root { --primary-green:#7CB342; --dark-green:#689F38; --light-green:#AED581; --brown:#8D6E63; --dark-brown:#5D4037; --white:#fff; --gray:#9E9E9E; --dark-gray:#424242; }
@@ -68,23 +70,23 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Fazenda</label>
-                <input type="text" id="fazenda" placeholder="Ex: Vale do Rio da Prata" value="Vale do Rio da Prata" required>
+                <input type="text" id="fazenda" placeholder="Ex: Vale do Rio da Prata" required>
             </div>
             <div class="form-group">
                 <label>Talhão</label>
-                <input type="text" id="talhao" placeholder="Ex: 76" value="76" required>
+                <input type="text" id="talhao" placeholder="Ex: 76" required>
             </div>
             <div class="form-group">
                 <label>Clone</label>
-                <input type="text" id="clone" placeholder="Ex: AEC 144" value="AEC 144" required>
+                <input type="text" id="clone" placeholder="Ex: AEC 144" required>
             </div>
             <div class="form-group">
                 <label>Data Plantio</label>
-                <input type="text" id="dataPlantio" value="13/08/2024" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
+                <input type="text" id="dataPlantio" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
             </div>
             <div class="form-group">
                 <label>Data Avaliação</label>
-                <input type="text" id="dataAvaliacao" value="13/09/2025" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
+                <input type="text" id="dataAvaliacao" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
             </div>
             <div class="form-group">
                 <label>Idade do Plantio (dias)</label>
@@ -102,29 +104,30 @@
             </div>
             <div class="form-group">
                 <label>Mudas Avaliadas</label>
-                <input type="number" id="mudasAvaliadas" placeholder="Ex: 4480" value="4480" onchange="calcularPercentuais()" min="1" required>
+                <input type="number" id="mudasAvaliadas" placeholder="Ex: 4480" onchange="calcularPercentuais()" min="1" required>
             </div>
             <div class="form-group">
                 <label>Área Talhão (ha)</label>
-                <input type="number" id="areaTalhao" placeholder="Ex: 24.37" step="0.01" value="24.37" min="0" required>
+                <input type="number" id="areaTalhao" placeholder="Ex: 24.37" step="0.01" min="0" required>
             </div>
             <div class="form-group">
                 <label>Área Avaliada (ha)</label>
-                <input type="number" id="areaAvaliada" placeholder="Ex: 15.41" step="0.01" value="15.41" min="0" required>
+                <input type="number" id="areaAvaliada" placeholder="Ex: 15.41" step="0.01" min="0" required>
             </div>
             <div class="form-group">
                 <label>Avaliador</label>
-                <input type="text" id="avaliador" placeholder="Ex: Marco Thulio" value="Marco Thulio" required>
+                <input type="text" id="avaliador" placeholder="Ex: Marco Thulio" required>
             </div>
             <div class="form-group">
                 <label>Viveiro</label>
-                <input type="text" id="viveiro" placeholder="Ex: Santa Isabel" value="Santa Isabel" required>
+                <input type="text" id="viveiro" placeholder="Ex: Santa Isabel" required>
             </div>
             <div class="form-group">
                 <label>Status da Carga</label>
                 <select id="statusCarga" required>
+                    <option value="">Selecione...</option>
                     <option value="Aprovada">Aprovada</option>
-                    <option value="Reprovada" selected>Reprovada</option>
+                    <option value="Reprovada">Reprovada</option>
                     <option value="Em Análise">Em Análise</option>
                 </select>
             </div>
@@ -485,7 +488,10 @@
         // Status e conectividade
         let isOnline = false;
         let isSyncing = false;
-        const API_BASE_URL = 'http://localhost:8000/api';
+        // Detecta automaticamente se está em localhost ou produção
+        const API_BASE_URL = window.location.hostname === 'localhost' ? 
+            'http://localhost:8000/api' : 
+            `${window.location.origin}/api`;
         
         // Verificar conectividade com servidor
         async function checkServerConnection() {
