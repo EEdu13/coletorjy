@@ -480,6 +480,23 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(function(registration) {
                 console.log('Service Worker registrado com sucesso:', registration.scope);
+                
+                // Força atualização quando há novo Service Worker
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Novo Service Worker instalado, recarrega a página
+                            window.location.reload();
+                        }
+                    });
+                });
+                
+                // Escuta mensagens do Service Worker
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
+                
             }).catch(function(error) {
                 console.log('Falha ao registrar Service Worker:', error);
             });
