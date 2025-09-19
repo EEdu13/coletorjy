@@ -992,8 +992,17 @@
                     escaldadura_vivas: avaliacao.escaldadura_vivas,
                     falsa_subsolagem_toco: avaliacao.falsa_subsolagem_toco,
                     queimada_viva: avaliacao.queimada_viva,
-                    raspagem_grilo_2_nivel: avaliacao.raspagem_grilo_2_nivel
+                    raspagem_grilo_2_nivel: avaliacao.raspagem_grilo_2_nivel,
+                    foto_area: avaliacao.foto_area,
+                    foto_linha: avaliacao.foto_linha
                 };
+                
+                // 🔍 LOG DETALHADO - Ver o que está sendo enviado
+                console.log('📤 Enviando para servidor:');
+                console.log('- Fazenda:', dadosServidor.fazenda);
+                console.log('- Talhão:', dadosServidor.talhao);
+                console.log('- Foto Área:', dadosServidor.foto_area || 'VAZIO');
+                console.log('- Foto Linha:', dadosServidor.foto_linha || 'VAZIO');
                 
                 const response = await fetch(`${API_BASE_URL}/avaliacoes`, {
                     method: 'POST',

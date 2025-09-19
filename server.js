@@ -66,6 +66,15 @@ app.post('/api/avaliacoes', async (req, res) => {
         await client.connect();
         
         const dados = req.body;
+        
+        // 🔍 LOG DETALHADO - Ver o que está chegando
+        console.log('📊 Dados recebidos no servidor:');
+        console.log('- Fazenda:', dados.fazenda);
+        console.log('- Talhão:', dados.talhao);
+        console.log('- Foto Área:', dados.foto_area || 'VAZIO');
+        console.log('- Foto Linha:', dados.foto_linha || 'VAZIO');
+        console.log('- Dados completos:', JSON.stringify(dados, null, 2));
+        
         const { diasAvaliacao, idadePlantio } = calcularDatas(dados.data_plantio, dados.data_avaliacao);
         
         // Calcular total de falhas
