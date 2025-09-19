@@ -51,6 +51,12 @@
         .success-message { background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c8 100%); color: var(--primary-green); padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0; font-weight: 600; border: 2px solid var(--primary-green); }
         .error-message { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #f44336; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0; font-weight: 600; border: 2px solid #f44336; }
         .storage-info { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; padding: 15px; border-radius: 12px; text-align: center; margin: 15px 0; font-weight: 500; border: 1px solid #2196f3; font-size: 0.95em; }
+        .photo-preview { margin-top: 10px; max-width: 100%; border-radius: 8px; overflow: hidden; border: 2px dashed #ddd; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; position: relative; }
+        .photo-preview img { max-width: 100%; height: auto; border-radius: 6px; }
+        .photo-preview.empty { color: #999; font-size: 0.9em; }
+        .photo-preview .remove-photo { position: absolute; top: 5px; right: 5px; background: rgba(244, 67, 54, 0.9); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 12px; }
+        input[type="file"] { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; background: white; cursor: pointer; }
+        input[type="file"]:focus { border-color: var(--primary-green); outline: none; }
         @media (max-width: 768px) { body{padding:15px} .form-grid{grid-template-columns:1fr} .conformidades-grid{grid-template-columns:1fr} .app-header h1{font-size:1.8em} }
     </style>
 </head>
@@ -130,6 +136,21 @@
                     <option value="Reprovada">Reprovada</option>
                     <option value="Em Análise">Em Análise</option>
                 </select>
+            </div>
+        </div>
+
+        <h3 style="color: var(--brown); margin: 30px 0 20px 0; font-size: 1.5em;">📸 Documentação Fotográfica</h3>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label>📷 Foto da Área</label>
+                <input type="file" id="fotoArea" accept="image/*" capture="environment">
+                <div id="previewFotoArea" class="photo-preview"></div>
+            </div>
+            <div class="form-group">
+                <label>📷 Foto da Linha</label>
+                <input type="file" id="fotoLinha" accept="image/*" capture="environment">
+                <div id="previewFotoLinha" class="photo-preview"></div>
             </div>
         </div>
 
@@ -588,6 +609,98 @@
             updateStorageInfo();
         }
         
+        // Upload das fotos para Azure Blob e manipulação de arquivos
+        let fotoAreaUrl = '';
+        let fotoLinhaUrl = '';
+        
+        // Configuração do upload de fotos
+        function setupPhotoUpload() {
+            const fotoAreaInput = document.getElementById('fotoArea');
+            const fotoLinhaInput = document.getElementById('fotoLinha');
+            const previewFotoArea = document.getElementById('previewFotoArea');
+            const previewFotoLinha = document.getElementById('previewFotoLinha');
+            
+            // Preview foto área
+            fotoAreaInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    previewFotoArea.innerHTML = '<img src="" alt="Preview Foto Área"><button class="remove-photo" onclick="removePhoto(\'area\')">×</button>';
+                    const img = previewFotoArea.querySelector('img');
+                    img.src = URL.createObjectURL(file);
+                    
+                    // Upload para Azure Blob (quando estiver online)
+                    if (isOnline) {
+                        fotoAreaUrl = await uploadPhotoToAzure(file, 'area');
+                    }
+                }
+            });
+            
+            // Preview foto linha
+            fotoLinhaInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    previewFotoLinha.innerHTML = '<img src="" alt="Preview Foto Linha"><button class="remove-photo" onclick="removePhoto(\'linha\')">×</button>';
+                    const img = previewFotoLinha.querySelector('img');
+                    img.src = URL.createObjectURL(file);
+                    
+                    // Upload para Azure Blob (quando estiver online)
+                    if (isOnline) {
+                        fotoLinhaUrl = await uploadPhotoToAzure(file, 'linha');
+                    }
+                }
+            });
+            
+            // Configurar previews vazios
+            previewFotoArea.innerHTML = '<span class="empty">📷 Toque para capturar foto da área</span>';
+            previewFotoLinha.innerHTML = '<span class="empty">📷 Toque para capturar foto da linha</span>';
+        }
+        
+        // Função para remover foto
+        function removePhoto(tipo) {
+            if (tipo === 'area') {
+                document.getElementById('fotoArea').value = '';
+                document.getElementById('previewFotoArea').innerHTML = '<span class="empty">📷 Toque para capturar foto da área</span>';
+                fotoAreaUrl = '';
+            } else {
+                document.getElementById('fotoLinha').value = '';
+                document.getElementById('previewFotoLinha').innerHTML = '<span class="empty">📷 Toque para capturar foto da linha</span>';
+                fotoLinhaUrl = '';
+            }
+        }
+        
+        // Upload para Azure Blob Storage
+        async function uploadPhotoToAzure(file, tipo) {
+            try {
+                // Criar nome único para o arquivo
+                const timestamp = new Date().getTime();
+                const filename = `${tipo}_${timestamp}_${file.name}`;
+                
+                // Criar FormData para envio
+                const formData = new FormData();
+                formData.append('photo', file);
+                formData.append('filename', filename);
+                formData.append('tipo', tipo);
+                
+                // Enviar para endpoint do servidor
+                const response = await fetch(`${API_BASE_URL}/upload-photo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log(`✅ Foto ${tipo} enviada:`, result.url);
+                    return result.url; // URL da Azure Blob
+                } else {
+                    console.error(`❌ Erro ao enviar foto ${tipo}`);
+                    return '';
+                }
+            } catch (error) {
+                console.error(`❌ Erro no upload da foto ${tipo}:`, error);
+                return '';
+            }
+        }
+        
         // Sincronização manual
         async function sincronizarManual() {
             const avaliacoesSalvas = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
@@ -901,7 +1014,9 @@
                 escaldadura_vivas: parseInt(document.getElementById('escaldaduraVivas').value) || 0,
                 falsa_subsolagem_toco: parseInt(document.getElementById('falsaSubsolagemToco').value) || 0,
                 queimada_viva: parseInt(document.getElementById('queimadaViva').value) || 0,
-                raspagem_grilo_2_nivel: parseInt(document.getElementById('raspagemGrilo2Nivel').value) || 0
+                raspagem_grilo_2_nivel: parseInt(document.getElementById('raspagemGrilo2Nivel').value) || 0,
+                foto_area: fotoAreaUrl || '',
+                foto_linha: fotoLinhaUrl || ''
             };
 
             let salvoNoServidor = false;
@@ -1021,6 +1136,12 @@
             // Recalcular percentuais e idade
             calcularPercentuais();
             calcularIdadePlantio();
+            
+            // Limpar fotos
+            removePhoto('area');
+            removePhoto('linha');
+            fotoAreaUrl = '';
+            fotoLinhaUrl = '';
             
             // Log para debug
             console.log('✅ Formulário resetado completamente - TODOS os campos limpos');
@@ -1159,6 +1280,12 @@
             
             // Carregar rascunho na inicialização
             carregarRascunho();
+            
+            // Inicializar upload de fotos
+            setupPhotoUpload();
+            
+            // Tornar removePhoto global
+            window.removePhoto = removePhoto;
         });
     </script>
 </body>
