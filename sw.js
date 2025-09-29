@@ -18,16 +18,21 @@ self.addEventListener('install', event => {
     );
 });
 
-// Interceptar requests
+// Interceptar requests com estratégia otimizada
 self.addEventListener('fetch', event => {
+    // Apenas interceptar requests relevantes (evitar overhead)
+    if (event.request.url.includes('api/') || 
+        event.request.url.includes('blob.core.windows.net')) {
+        // Requests de API e Azure - sempre ir para rede
+        event.respondWith(fetch(event.request));
+        return;
+    }
+    
+    // Para recursos estáticos, usar cache first
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Retorna o cache se encontrado
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
+                return response || fetch(event.request);
             })
     );
 });
