@@ -1,52 +1,63 @@
-const CACHE_NAME = 'sobrevivencia-v2';
+const CACHE_NAME = 'sobrevivencia-v3';
 const urlsToCache = [
-    '/',
     '/coletor.html',
-    '/manifest.json'
+    '/manifest.json',
+    '/icon-192.svg',
+    '/icon-512.svg'
 ];
+
+let cacheInitialized = false;
 
 // Instalar Service Worker
 self.addEventListener('install', event => {
-    // Força a ativação imediata do novo Service Worker
-    self.skipWaiting();
+    console.log('SW: Instalando versão', CACHE_NAME);
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Cache aberto');
+                console.log('SW: Cache inicializado');
+                cacheInitialized = true;
                 return cache.addAll(urlsToCache);
             })
-    );
-});
-
-// Interceptar requests com estratégia otimizada
-self.addEventListener('fetch', event => {
-    // Apenas interceptar requests relevantes (evitar overhead)
-    if (event.request.url.includes('api/') || 
-        event.request.url.includes('blob.core.windows.net')) {
-        // Requests de API e Azure - sempre ir para rede
-        event.respondWith(fetch(event.request));
-        return;
-    }
-    
-    // Para recursos estáticos, usar cache first
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
+            .catch(err => {
+                console.error('SW: Erro ao criar cache:', err);
             })
     );
 });
 
-// Atualizar Service Worker
+// Interceptar requests APENAS quando necessário
+self.addEventListener('fetch', event => {
+    const url = event.request.url;
+    
+    // IGNORAR completamente estas URLs para evitar loops
+    if (url.includes('api/health') || 
+        url.includes('api/upload') || 
+        url.includes('blob.core.windows.net') ||
+        url.includes('chrome-extension') ||
+        event.request.method !== 'GET') {
+        return; // Deixa o browser lidar normalmente
+    }
+    
+    // Apenas cachear recursos estáticos essenciais
+    if (url.includes('coletor.html') || 
+        url.includes('manifest.json') || 
+        url.includes('.svg')) {
+        event.respondWith(
+            caches.match(event.request)
+                .then(response => response || fetch(event.request))
+                .catch(() => fetch(event.request))
+        );
+    }
+});
+
+// Ativar Service Worker (SEM forçar controle imediato)
 self.addEventListener('activate', event => {
-    // Assume controle de todas as abas imediatamente
-    event.waitUntil(clients.claim());
+    console.log('SW: Ativando versão', CACHE_NAME);
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
-                        console.log('Deletando cache antigo:', cacheName);
+                        console.log('SW: Removendo cache antigo:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
