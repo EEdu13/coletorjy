@@ -91,11 +91,11 @@
             </div>
             <div class="form-group">
                 <label>Data Plantio</label>
-                <input type="text" id="dataPlantio" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
+                <input type="date" id="dataPlantio" required>
             </div>
             <div class="form-group">
                 <label>Data Avaliação</label>
-                <input type="text" id="dataAvaliacao" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" required>
+                <input type="date" id="dataAvaliacao" required>
             </div>
             <div class="form-group">
                 <label>Idade do Plantio (dias)</label>
@@ -435,9 +435,7 @@
     </div>
 
     <script>
-        // Configurar datas iniciais
-        document.getElementById('dataPlantio').value = '13/08/2024';
-        document.getElementById('dataAvaliacao').value = '13/09/2025';
+        // Campos de data agora são type="date" - não precisam de configuração inicial
 
         // Função para aplicar máscara de data (dd/mm/aaaa)
         function aplicarMascaraData(input) {
@@ -458,22 +456,14 @@
             return new Date(ano, mes, dia);
         }
 
-        // Função para converter data brasileira (dd/mm/aaaa) para formato ISO (aaaa-mm-dd)
-        function converterDataParaISO(dataBrasil) {
-            if (!dataBrasil || dataBrasil.length !== 10) return '';
-            const partes = dataBrasil.split('/');
-            if (partes.length !== 3) return '';
-            return `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-        }
-
         // Função para calcular idade do plantio baseado na diferença de datas
         function calcularIdadePlantio() {
-            const dataPlantio = document.getElementById('dataPlantio').value;
-            const dataAvaliacao = document.getElementById('dataAvaliacao').value;
+            const dataPlantio = document.getElementById('dataPlantio').value; // Formato: YYYY-MM-DD
+            const dataAvaliacao = document.getElementById('dataAvaliacao').value; // Formato: YYYY-MM-DD
             
             if (dataPlantio && dataAvaliacao) {
-                const plantio = converterDataBrasileira(dataPlantio);
-                const avaliacao = converterDataBrasileira(dataAvaliacao);
+                const plantio = new Date(dataPlantio);
+                const avaliacao = new Date(dataAvaliacao);
                 
                 if (plantio && avaliacao && avaliacao >= plantio) {
                     const diffTime = avaliacao - plantio;
@@ -487,15 +477,9 @@
             }
         }
         
-        // Adicionar listeners para calcular idade do plantio e aplicar máscaras
-        document.getElementById('dataPlantio').addEventListener('input', function() {
-            aplicarMascaraData(this);
-            calcularIdadePlantio();
-        });
-        document.getElementById('dataAvaliacao').addEventListener('input', function() {
-            aplicarMascaraData(this);
-            calcularIdadePlantio();
-        });
+        // Adicionar listeners para calcular idade do plantio
+        document.getElementById('dataPlantio').addEventListener('change', calcularIdadePlantio);
+        document.getElementById('dataAvaliacao').addEventListener('change', calcularIdadePlantio);
 
         // Calcular idade inicial
         calcularIdadePlantio();
@@ -772,13 +756,17 @@
         
         // Sincronização manual
         async function sincronizarManual() {
+            console.log('🔄 Sincronização manual iniciada');
             const avaliacoesSalvas = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
+            console.log('📊 Avaliações salvas localmente:', avaliacoesSalvas.length);
             
             if (avaliacoesSalvas.length === 0) {
+                console.log('❌ Nenhuma avaliação pendente');
                 showMessage('error', 'Nenhuma avaliação pendente para sincronizar.');
                 return;
             }
             
+            console.log('🔍 Status conexão:', isOnline ? 'Online' : 'Offline');
             if (!isOnline) {
                 showMessage('error', 'Servidor offline. Não é possível sincronizar no momento.');
                 return;
@@ -1098,8 +1086,8 @@
                 fazenda: document.getElementById('fazenda').value,
                 talhao: document.getElementById('talhao').value,
                 clone: document.getElementById('clone').value,
-                data_plantio: converterDataParaISO(document.getElementById('dataPlantio').value),
-                data_avaliacao: converterDataParaISO(document.getElementById('dataAvaliacao').value),
+                data_plantio: document.getElementById('dataPlantio').value, // Já em formato ISO (YYYY-MM-DD)
+                data_avaliacao: document.getElementById('dataAvaliacao').value, // Já em formato ISO (YYYY-MM-DD)
                 dias_avaliacao: parseInt(document.getElementById('diasAvaliacao').value) || 0,
                 idade_plantio: parseInt(document.getElementById('idadePlantio').value) || 0,
                 mudas_avaliadas: parseInt(document.getElementById('mudasAvaliadas').value),
@@ -1233,9 +1221,9 @@
                 if (elemento) elemento.selectedIndex = 0;
             });
 
-            // Resetar datas para valores padrão
-            document.getElementById('dataPlantio').value = '13/08/2024';
-            document.getElementById('dataAvaliacao').value = '13/09/2025';
+            // Limpar campos de data
+            document.getElementById('dataPlantio').value = '';
+            document.getElementById('dataAvaliacao').value = '';
 
             // Limpar campos de não conformidades
             const camposConformidade = [
