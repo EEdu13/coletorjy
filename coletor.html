@@ -614,27 +614,30 @@
                     };
                     reader.readAsDataURL(file);
                     
-                    console.log('� Foto área capturada:', file.name);
+                    console.log('Foto area capturada:', file.name);
+                    
+                    // Aguardar patch verificar conectividade
+                    await new Promise(resolve => setTimeout(resolve, 200));
                     
                     if (isOnline) {
-                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando...</div>';
+                        statusDiv.innerHTML = '<div class="photo-loading">Enviando...</div>';
                         
                         try {
                             fotoAreaUrl = await uploadPhotoToAzure(file, 'area');
                             
                             if (fotoAreaUrl) {
-                                statusDiv.innerHTML = '<div class="photo-success">✅ Enviada!</div>';
-                                console.log('✅ Upload área online:', fotoAreaUrl);
-                                window.fotoAreaBase64 = null; // Limpa Base64 após upload
+                                statusDiv.innerHTML = '<div class="photo-success">Enviada!</div>';
+                                console.log('Upload area:', fotoAreaUrl);
+                                window.fotoAreaBase64 = null;
                                 setTimeout(() => statusDiv.innerHTML = '', 2000);
                             }
                         } catch (error) {
-                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro no upload</div>';
-                            console.error('❌ Erro upload área:', error);
+                            statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
+                            console.log('Salvo offline');
                         }
                     } else {
-                        statusDiv.innerHTML = '<div class="photo-loading">📱 Salva - enviará quando online</div>';
-                        console.log('📱 Foto área salva offline (Base64)');
+                        statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
+                        console.log('Salvo offline');
                     }
                 }
             });
@@ -658,27 +661,30 @@
                     };
                     reader.readAsDataURL(file);
                     
-                    console.log('� Foto linha capturada:', file.name);
+                    console.log('Foto linha capturada:', file.name);
+                    
+                    // Aguardar patch verificar conectividade
+                    await new Promise(resolve => setTimeout(resolve, 200));
                     
                     if (isOnline) {
-                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando...</div>';
+                        statusDiv.innerHTML = '<div class="photo-loading">Enviando...</div>';
                         
                         try {
                             fotoLinhaUrl = await uploadPhotoToAzure(file, 'linha');
                             
                             if (fotoLinhaUrl) {
-                                statusDiv.innerHTML = '<div class="photo-success">✅ Enviada!</div>';
-                                console.log('✅ Upload linha online:', fotoLinhaUrl);
-                                window.fotoLinhaBase64 = null; // Limpa Base64 após upload
+                                statusDiv.innerHTML = '<div class="photo-success">Enviada!</div>';
+                                console.log('Upload linha:', fotoLinhaUrl);
+                                window.fotoLinhaBase64 = null;
                                 setTimeout(() => statusDiv.innerHTML = '', 2000);
                             }
                         } catch (error) {
-                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro no upload</div>';
-                            console.error('❌ Erro upload linha:', error);
+                            statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
+                            console.log('Salvo offline');
                         }
                     } else {
-                        statusDiv.innerHTML = '<div class="photo-loading">📱 Salva - enviará quando online</div>';
-                        console.log('📱 Foto linha salva offline (Base64)');
+                        statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
+                        console.log('Salvo offline');
                     }
                 }
             });
@@ -1164,12 +1170,14 @@
             let mensagemSucesso = '';
 
             // Verificar conectividade APENAS quando for salvar (economiza bateria)
-            btnSalvar.textContent = '🔍 Verificando conexão...';
+            btnSalvar.textContent = 'Verificando conexao...';
+            showMessage('success', '🔍 Verificando conexão com servidor...');
             await checkServerConnection();
 
             // Se estiver online, tentar salvar no servidor primeiro
             if (isOnline) {
-                btnSalvar.textContent = '☁️ Enviando para servidor...';
+                btnSalvar.textContent = 'Enviando relatorio...';
+                showMessage('success', '☁️ Salvando seu relatório no servidor...');
                 const resultadoServidor = await enviarParaServidor(avaliacao);
                 
                 if (resultadoServidor.success) {
@@ -1187,7 +1195,8 @@
 
             // Sempre salvar localmente se não conseguiu salvar no servidor
             if (!salvoNoServidor) {
-                btnSalvar.textContent = '💾 Salvando localmente...';
+                btnSalvar.textContent = 'Salvando localmente...';
+                showMessage('success', '💾 Salvando para sincronizar depois...');
                 try {
                     const avaliacoes = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
                     avaliacoes.push(avaliacao);
