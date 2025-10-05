@@ -598,33 +598,39 @@
                     // Mostrar preview local imediatamente
                     previewFotoArea.innerHTML = '<img src="" alt="Preview Foto Área"><button class="remove-photo" onclick="removePhoto(\'area\')">×</button><div id="statusFotoArea"></div>';
                     const img = previewFotoArea.querySelector('img');
-                    img.src = URL.createObjectURL(file);
-                    
-                    // Upload para Azure Blob
                     const statusDiv = document.getElementById('statusFotoArea');
-                    console.log('🔍 Status upload área - isOnline:', isOnline);
+                    
+                    // Converter arquivo para Base64 para armazenamento offline
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        img.src = event.target.result;
+                        // Salvar Base64 temporariamente
+                        window.fotoAreaBase64 = event.target.result;
+                        window.fotoAreaFileName = file.name;
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    console.log('� Foto área capturada:', file.name);
                     
                     if (isOnline) {
-                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando foto da área...</div>';
+                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando...</div>';
                         
                         try {
                             fotoAreaUrl = await uploadPhotoToAzure(file, 'area');
                             
                             if (fotoAreaUrl) {
-                                statusDiv.innerHTML = '<div class="photo-success">✅ Foto da área enviada!</div>';
-                                console.log('✅ Upload área sucesso:', fotoAreaUrl);
-                                setTimeout(() => statusDiv.innerHTML = '', 3000);
-                            } else {
-                                statusDiv.innerHTML = '<div class="photo-error">❌ Erro ao enviar foto da área</div>';
-                                console.error('❌ Upload área falhou');
+                                statusDiv.innerHTML = '<div class="photo-success">✅ Enviada!</div>';
+                                console.log('✅ Upload área online:', fotoAreaUrl);
+                                window.fotoAreaBase64 = null; // Limpa Base64 após upload
+                                setTimeout(() => statusDiv.innerHTML = '', 2000);
                             }
                         } catch (error) {
-                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro: ' + error.message + '</div>';
-                            console.error('❌ Erro no upload área:', error);
+                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro no upload</div>';
+                            console.error('❌ Erro upload área:', error);
                         }
                     } else {
-                        statusDiv.innerHTML = '<div class="photo-loading">📱 Offline - foto será enviada quando conectar</div>';
-                        console.log('📱 Modo offline - upload área adiado');
+                        statusDiv.innerHTML = '<div class="photo-loading">📱 Salva - enviará quando online</div>';
+                        console.log('📱 Foto área salva offline (Base64)');
                     }
                 }
             });
@@ -636,33 +642,39 @@
                     // Mostrar preview local imediatamente
                     previewFotoLinha.innerHTML = '<img src="" alt="Preview Foto Linha"><button class="remove-photo" onclick="removePhoto(\'linha\')">×</button><div id="statusFotoLinha"></div>';
                     const img = previewFotoLinha.querySelector('img');
-                    img.src = URL.createObjectURL(file);
-                    
-                    // Upload para Azure Blob
                     const statusDiv = document.getElementById('statusFotoLinha');
-                    console.log('🔍 Status upload linha - isOnline:', isOnline);
+                    
+                    // Converter arquivo para Base64 para armazenamento offline
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        img.src = event.target.result;
+                        // Salvar Base64 temporariamente
+                        window.fotoLinhaBase64 = event.target.result;
+                        window.fotoLinhaFileName = file.name;
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    console.log('� Foto linha capturada:', file.name);
                     
                     if (isOnline) {
-                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando foto da linha...</div>';
+                        statusDiv.innerHTML = '<div class="photo-loading">📤 Enviando...</div>';
                         
                         try {
                             fotoLinhaUrl = await uploadPhotoToAzure(file, 'linha');
                             
                             if (fotoLinhaUrl) {
-                                statusDiv.innerHTML = '<div class="photo-success">✅ Foto da linha enviada!</div>';
-                                console.log('✅ Upload linha sucesso:', fotoLinhaUrl);
-                                setTimeout(() => statusDiv.innerHTML = '', 3000);
-                            } else {
-                                statusDiv.innerHTML = '<div class="photo-error">❌ Erro ao enviar foto da linha</div>';
-                                console.error('❌ Upload linha falhou');
+                                statusDiv.innerHTML = '<div class="photo-success">✅ Enviada!</div>';
+                                console.log('✅ Upload linha online:', fotoLinhaUrl);
+                                window.fotoLinhaBase64 = null; // Limpa Base64 após upload
+                                setTimeout(() => statusDiv.innerHTML = '', 2000);
                             }
                         } catch (error) {
-                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro: ' + error.message + '</div>';
-                            console.error('❌ Erro no upload linha:', error);
+                            statusDiv.innerHTML = '<div class="photo-error">❌ Erro no upload</div>';
+                            console.error('❌ Erro upload linha:', error);
                         }
                     } else {
-                        statusDiv.innerHTML = '<div class="photo-loading">📱 Offline - foto será enviada quando conectar</div>';
-                        console.log('📱 Modo offline - upload linha adiado');
+                        statusDiv.innerHTML = '<div class="photo-loading">📱 Salva - enviará quando online</div>';
+                        console.log('📱 Foto linha salva offline (Base64)');
                     }
                 }
             });
@@ -735,7 +747,20 @@
             }
         }
         
-        // Sincronização manual
+        // Converter Base64 para File
+        function base64ToFile(base64, filename) {
+            const arr = base64.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, { type: mime });
+        }
+
+        // Sincronização manual COM UPLOAD DE FOTOS
         async function sincronizarManual() {
             console.log('🔄 Sincronização manual iniciada');
             const avaliacoesSalvas = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
@@ -749,12 +774,12 @@
             
             console.log('🔍 Status conexão:', isOnline ? 'Online' : 'Offline');
             if (!isOnline) {
-                showMessage('error', 'Servidor offline. Não é possível sincronizar no momento.');
+                showMessage('error', 'Servidor offline. Conecte-se à internet primeiro.');
                 return;
             }
             
             if (isSyncing) {
-                showMessage('error', 'Sincronização já em andamento. Aguarde...');
+                showMessage('error', 'Sincronização em andamento. Aguarde...');
                 return;
             }
             
@@ -767,7 +792,7 @@
                 btnSincronizar.textContent = 'Sincronizando...';
             }
             
-            showMessage('success', `Iniciando sincronização manual de ${avaliacoesSalvas.length} avaliações...`);
+            showMessage('success', `Sincronizando ${avaliacoesSalvas.length} avaliações...`);
             
             let sincronizadas = 0;
             let falhas = 0;
@@ -775,14 +800,37 @@
             
             for (const avaliacao of avaliacoesSalvas) {
                 try {
+                    // Se tiver fotos em Base64, fazer upload primeiro
+                    if (avaliacao.foto_area_base64 && !avaliacao.foto_area) {
+                        console.log('📤 Fazendo upload da foto área offline...');
+                        const fileArea = base64ToFile(avaliacao.foto_area_base64, avaliacao.foto_area_filename || 'area.jpg');
+                        avaliacao.foto_area = await uploadPhotoToAzure(fileArea, 'area');
+                        console.log('✅ Foto área enviada:', avaliacao.foto_area);
+                    }
+                    
+                    if (avaliacao.foto_linha_base64 && !avaliacao.foto_linha) {
+                        console.log('📤 Fazendo upload da foto linha offline...');
+                        const fileLinha = base64ToFile(avaliacao.foto_linha_base64, avaliacao.foto_linha_filename || 'linha.jpg');
+                        avaliacao.foto_linha = await uploadPhotoToAzure(fileLinha, 'linha');
+                        console.log('✅ Foto linha enviada:', avaliacao.foto_linha);
+                    }
+                    
+                    // Remover campos Base64 antes de enviar ao servidor
+                    delete avaliacao.foto_area_base64;
+                    delete avaliacao.foto_linha_base64;
+                    delete avaliacao.foto_area_filename;
+                    delete avaliacao.foto_linha_filename;
+                    
                     const resultado = await enviarParaServidor(avaliacao);
                     if (resultado.success) {
                         sincronizadas++;
+                        console.log('✅ Avaliação sincronizada com fotos!');
                     } else {
                         falhas++;
                         avaliacoesRestantes.push(avaliacao);
                     }
                 } catch (error) {
+                    console.error('❌ Erro na sincronização:', error);
                     falhas++;
                     avaliacoesRestantes.push(avaliacao);
                 }
@@ -792,11 +840,11 @@
             localStorage.setItem('avaliacoes_salvas', JSON.stringify(avaliacoesRestantes));
             
             if (sincronizadas > 0) {
-                showMessage('success', `Sincronização concluída: ${sincronizadas} avaliações enviadas para o servidor!`);
+                showMessage('success', `✅ ${sincronizadas} avaliações sincronizadas com fotos!`);
             }
             
             if (falhas > 0) {
-                showMessage('error', `${falhas} avaliações falharam na sincronização. Tente novamente mais tarde.`);
+                showMessage('error', `⚠️ ${falhas} avaliações falharam. Tente novamente.`);
             }
             
             isSyncing = false;
@@ -1099,7 +1147,12 @@
                 queimada_viva: parseInt(document.getElementById('queimadaViva').value) || 0,
                 raspagem_grilo_2_nivel: parseInt(document.getElementById('raspagemGrilo2Nivel').value) || 0,
                 foto_area: fotoAreaUrl || '',
-                foto_linha: fotoLinhaUrl || ''
+                foto_linha: fotoLinhaUrl || '',
+                // Salvar fotos em Base64 se estiver offline
+                foto_area_base64: window.fotoAreaBase64 || null,
+                foto_linha_base64: window.fotoLinhaBase64 || null,
+                foto_area_filename: window.fotoAreaFileName || null,
+                foto_linha_filename: window.fotoLinhaFileName || null
             };
 
             let salvoNoServidor = false;
@@ -1112,13 +1165,16 @@
                 
                 if (resultadoServidor.success) {
                     salvoNoServidor = true;
-                    mensagemSucesso = `✅ Avaliação salva no servidor com sucesso! ${fotoAreaUrl || fotoLinhaUrl ? '📸 Fotos incluídas!' : ''}`;
+                    mensagemSucesso = `✅ Avaliação salva no servidor! ${fotoAreaUrl || fotoLinhaUrl ? '📸 Fotos incluídas!' : ''}`;
+                    // Limpar Base64 após sucesso no servidor
+                    window.fotoAreaBase64 = null;
+                    window.fotoLinhaBase64 = null;
                 } else {
                     console.warn('Erro no servidor:', resultadoServidor.error);
-                    mensagemSucesso = `⚠️ Servidor com problema. Salvando localmente para sincronizar depois.`;
+                    mensagemSucesso = `⚠️ Servidor indisponível. Salvo localmente com fotos.`;
                 }
             } else {
-                mensagemSucesso = '📱 Modo offline. Avaliação salva localmente para sincronização automática.';
+                mensagemSucesso = '📱 Offline. Salvo localmente com fotos para sincronizar depois.';
             }
 
             // Sempre salvar localmente se não conseguiu salvar no servidor
@@ -1128,9 +1184,13 @@
                     const avaliacoes = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
                     avaliacoes.push(avaliacao);
                     localStorage.setItem('avaliacoes_salvas', JSON.stringify(avaliacoes));
+                    console.log('💾 Salvo offline com fotos:', {
+                        temFotoArea: !!avaliacao.foto_area_base64,
+                        temFotoLinha: !!avaliacao.foto_linha_base64
+                    });
                 } catch (error) {
                     console.error('Erro ao salvar localmente:', error);
-                    showMessage('error', 'Erro ao salvar avaliação. Verifique o espaço disponível no dispositivo.');
+                    showMessage('error', 'Erro ao salvar. Verifique espaço disponível.');
                     btnSalvar.disabled = false;
                     btnSalvar.textContent = 'Salvar Avaliação';
                     return;
@@ -1235,15 +1295,18 @@
             calcularPercentuais();
             calcularIdadePlantio();
             
-            // Limpar fotos
+            // Limpar fotos e Base64
             removePhoto('area');
             removePhoto('linha');
             fotoAreaUrl = '';
             fotoLinhaUrl = '';
+            window.fotoAreaBase64 = null;
+            window.fotoLinhaBase64 = null;
+            window.fotoAreaFileName = null;
+            window.fotoLinhaFileName = null;
             
             // Log para debug
             console.log('✅ Formulário resetado completamente - TODOS os campos limpos');
-            console.log('Formulário resetado completamente');
         }
 
         // Função para limpar dados salvos (com confirmação)
