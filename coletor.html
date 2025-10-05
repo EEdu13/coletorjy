@@ -593,6 +593,8 @@
             const previewFotoArea = document.getElementById('previewFotoArea');
             const previewFotoLinha = document.getElementById('previewFotoLinha');
             
+            console.log('Setup photo upload iniciado');
+            
             // Preview foto área
             fotoAreaInput.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
@@ -1490,100 +1492,30 @@
             }
         }
         
-        // HOTFIX: Sobrescrever event listeners de foto para incluir checkServerConnection
-        document.addEventListener('DOMContentLoaded', function() {
+        // ❌ HOTFIX REMOVIDO - estava quebrando referências dos inputs
+        
+        // NOVO PATCH: Adiciona checkServerConnection SEM quebrar referências
+        setTimeout(function() {
+            console.log('Aplicando patch de conectividade nas fotos...');
+            
             const fotoAreaInput = document.getElementById('fotoArea');
             const fotoLinhaInput = document.getElementById('fotoLinha');
             
             if (fotoAreaInput && fotoLinhaInput) {
-                // Remover listeners antigos clonando elementos
-                const newFotoAreaInput = fotoAreaInput.cloneNode(true);
-                const newFotoLinhaInput = fotoLinhaInput.cloneNode(true);
-                fotoAreaInput.parentNode.replaceChild(newFotoAreaInput, fotoAreaInput);
-                fotoLinhaInput.parentNode.replaceChild(newFotoLinhaInput, fotoLinhaInput);
+                // Interceptar evento ANTES dos listeners existentes
+                fotoAreaInput.addEventListener('change', async function(e) {
+                    await checkServerConnection();
+                    console.log('Conectividade verificada para foto area');
+                }, {capture: true});
                 
-                // Adicionar novos listeners com verificação de conectividade
-                newFotoAreaInput.addEventListener('change', async function(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    
-                    const previewFotoArea = document.getElementById('previewFotoArea');
-                    previewFotoArea.innerHTML = '<img src="" alt="Preview Foto Área"><button class="remove-photo" onclick="removePhoto(\'area\')">×</button><div id="statusFotoArea"></div>';
-                    const img = previewFotoArea.querySelector('img');
-                    const statusDiv = document.getElementById('statusFotoArea');
-                    
-                    const reader = new FileReader();
-                    reader.onload = async function(event) {
-                        img.src = event.target.result;
-                        window.fotoAreaBase64 = event.target.result;
-                        window.fotoAreaFileName = file.name;
-                        
-                        // Verificar conectividade
-                        statusDiv.innerHTML = '<div class="photo-loading">Verificando...</div>';
-                        await checkServerConnection();
-                        
-                        if (isOnline) {
-                            statusDiv.innerHTML = '<div class="photo-loading">Enviando...</div>';
-                            try {
-                                fotoAreaUrl = await uploadPhotoToAzure(file, 'area');
-                                if (fotoAreaUrl) {
-                                    statusDiv.innerHTML = '<div class="photo-success">Enviada!</div>';
-                                    console.log('Upload area:', fotoAreaUrl);
-                                    window.fotoAreaBase64 = null;
-                                    setTimeout(() => statusDiv.innerHTML = '', 3000);
-                                }
-                            } catch (error) {
-                                statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
-                                console.log('Salvo offline');
-                            }
-                        } else {
-                            statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                });
+                fotoLinhaInput.addEventListener('change', async function(e) {
+                    await checkServerConnection();
+                    console.log('Conectividade verificada para foto linha');
+                }, {capture: true});
                 
-                newFotoLinhaInput.addEventListener('change', async function(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    
-                    const previewFotoLinha = document.getElementById('previewFotoLinha');
-                    previewFotoLinha.innerHTML = '<img src="" alt="Preview Foto Linha"><button class="remove-photo" onclick="removePhoto(\'linha\')">×</button><div id="statusFotoLinha"></div>';
-                    const img = previewFotoLinha.querySelector('img');
-                    const statusDiv = document.getElementById('statusFotoLinha');
-                    
-                    const reader = new FileReader();
-                    reader.onload = async function(event) {
-                        img.src = event.target.result;
-                        window.fotoLinhaBase64 = event.target.result;
-                        window.fotoLinhaFileName = file.name;
-                        
-                        // Verificar conectividade
-                        statusDiv.innerHTML = '<div class="photo-loading">Verificando...</div>';
-                        await checkServerConnection();
-                        
-                        if (isOnline) {
-                            statusDiv.innerHTML = '<div class="photo-loading">Enviando...</div>';
-                            try {
-                                fotoLinhaUrl = await uploadPhotoToAzure(file, 'linha');
-                                if (fotoLinhaUrl) {
-                                    statusDiv.innerHTML = '<div class="photo-success">Enviada!</div>';
-                                    console.log('Upload linha:', fotoLinhaUrl);
-                                    window.fotoLinhaBase64 = null;
-                                    setTimeout(() => statusDiv.innerHTML = '', 3000);
-                                }
-                            } catch (error) {
-                                statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
-                                console.log('Salvo offline');
-                            }
-                        } else {
-                            statusDiv.innerHTML = '<div class="photo-loading">Offline</div>';
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                });
+                console.log('Patch aplicado com sucesso!');
             }
-        });
+        }, 1000);
     </script>
 </body>
 </html>
