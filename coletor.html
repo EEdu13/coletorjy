@@ -484,29 +484,14 @@
         // Calcular idade inicial
         calcularIdadePlantio();
 
-        // Service Worker para PWA
+        // ❌ SERVICE WORKER DESABILITADO - Estava causando superaquecimento
+        // Remover todos os Service Workers existentes
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(function(registration) {
-                console.log('Service Worker registrado com sucesso:', registration.scope);
-                
-                // Força atualização quando há novo Service Worker
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // Novo Service Worker instalado, recarrega a página
-                            window.location.reload();
-                        }
-                    });
-                });
-                
-                // Escuta mensagens do Service Worker
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    window.location.reload();
-                });
-                
-            }).catch(function(error) {
-                console.log('Falha ao registrar Service Worker:', error);
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                    registration.unregister();
+                    console.log('🗑️ Service Worker removido para testes');
+                }
             });
         }
 
@@ -518,33 +503,29 @@
             'http://localhost:8000/api' : 
             `${window.location.origin}/api`;
         
-        // Verificar conectividade com servidor
+        // Verificar conectividade com servidor (SEM SINCRONIZAÇÃO AUTOMÁTICA)
         async function checkServerConnection() {
             try {
-                console.log('🔍 Verificando conectividade:', API_BASE_URL + '/health');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
                 const response = await fetch(`${API_BASE_URL}/health`, {
                     method: 'GET',
-                    timeout: 5000
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
-                    const wasOffline = !isOnline;
                     isOnline = true;
-                    console.log('✅ Servidor online detectado');
-                    
-                    // Se estava offline e agora está online, tentar sincronizar automaticamente
-                    if (wasOffline && !isSyncing) {
-                        await sincronizarAutomaticamente();
-                    }
-                    
+                    console.log('✅ Servidor online');
                     return true;
                 }
             } catch (error) {
-                console.log('❌ Servidor não disponível:', error.message);
+                // Ignora erro silenciosamente - não precisa logar toda hora
             }
             
             isOnline = false;
-            console.log('📱 Modo offline ativado');
             return false;
         }
         
@@ -1332,33 +1313,17 @@
         document.addEventListener('DOMContentLoaded', async function() {
             calcularPercentuais();
             
-            // Verificar conectividade inicial
+            // Verificar conectividade inicial (UMA VEZ)
             await checkServerConnection();
             updateStatus();
             updateStorageInfo();
             adicionarBotoesGerenciamento();
             
-            // Verificar conectividade a cada 5 minutos (reduzido de 15s)
-            setInterval(async () => {
-                await checkServerConnection();
-                updateStatus();
-            }, 300000); // 5 minutos
+            // ❌ REMOVIDO: setInterval de 5 minutos - causa superaquecimento
+            // ❌ REMOVIDO: setInterval de 10 minutos - sincronização só manual agora
             
-            // Tentativa de sincronização automática a cada 10 minutos se houver dados pendentes
-            setInterval(async () => {
-                const avaliacoesPendentes = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
-                if (isOnline && avaliacoesPendentes.length > 0 && !isSyncing) {
-                    console.log('Tentativa de sincronização automática programada...');
-                    await sincronizarAutomaticamente();
-                }
-            }, 600000); // 10 minutos
-            
-            // Configurar event listeners para auto-save (com debounce)
-            const inputs = document.querySelectorAll('input, select');
-            inputs.forEach(input => {
-                input.addEventListener('change', autoSave);
-                input.addEventListener('blur', autoSave);
-            });
+            // ❌ REMOVIDO: auto-save em change/blur - causa loops infinitos
+            // Agora só salva quando clicar no botão "Salvar Avaliação"
             
             // Carregar rascunho na inicialização
             carregarRascunho();
