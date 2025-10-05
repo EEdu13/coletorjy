@@ -764,22 +764,23 @@
         async function sincronizarManual() {
             console.log('🔄 Sincronização manual iniciada');
             const avaliacoesSalvas = JSON.parse(localStorage.getItem('avaliacoes_salvas') || '[]');
-            console.log('📊 Avaliações salvas localmente:', avaliacoesSalvas.length);
             
             if (avaliacoesSalvas.length === 0) {
-                console.log('❌ Nenhuma avaliação pendente');
                 showMessage('error', 'Nenhuma avaliação pendente para sincronizar.');
-                return;
-            }
-            
-            console.log('🔍 Status conexão:', isOnline ? 'Online' : 'Offline');
-            if (!isOnline) {
-                showMessage('error', 'Servidor offline. Conecte-se à internet primeiro.');
                 return;
             }
             
             if (isSyncing) {
                 showMessage('error', 'Sincronização em andamento. Aguarde...');
+                return;
+            }
+            
+            // Verificar conectividade APENAS quando for sincronizar (economiza bateria)
+            showMessage('success', '🔍 Verificando conexão...');
+            await checkServerConnection();
+            
+            if (!isOnline) {
+                showMessage('error', 'Sem conexão. Conecte-se à internet primeiro.');
                 return;
             }
             
@@ -1158,6 +1159,10 @@
             let salvoNoServidor = false;
             let mensagemSucesso = '';
 
+            // Verificar conectividade APENAS quando for salvar (economiza bateria)
+            btnSalvar.textContent = '🔍 Verificando conexão...';
+            await checkServerConnection();
+
             // Se estiver online, tentar salvar no servidor primeiro
             if (isOnline) {
                 btnSalvar.textContent = '☁️ Enviando para servidor...';
@@ -1165,16 +1170,15 @@
                 
                 if (resultadoServidor.success) {
                     salvoNoServidor = true;
-                    mensagemSucesso = `✅ Avaliação salva no servidor! ${fotoAreaUrl || fotoLinhaUrl ? '📸 Fotos incluídas!' : ''}`;
+                    mensagemSucesso = `✅ Salvo no servidor! ${fotoAreaUrl || fotoLinhaUrl ? '📸 Fotos incluídas!' : ''}`;
                     // Limpar Base64 após sucesso no servidor
                     window.fotoAreaBase64 = null;
                     window.fotoLinhaBase64 = null;
                 } else {
-                    console.warn('Erro no servidor:', resultadoServidor.error);
-                    mensagemSucesso = `⚠️ Servidor indisponível. Salvo localmente com fotos.`;
+                    mensagemSucesso = `⚠️ Servidor indisponível. Salvo localmente.`;
                 }
             } else {
-                mensagemSucesso = '📱 Offline. Salvo localmente com fotos para sincronizar depois.';
+                mensagemSucesso = '📱 Offline. Salvo localmente para sincronizar depois.';
             }
 
             // Sempre salvar localmente se não conseguiu salvar no servidor
@@ -1372,57 +1376,38 @@
             formCard.appendChild(btnLimpar);
         }
 
-        // Inicializar aplicação
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Inicializar aplicação (ZERO consumo de bateria)
+        document.addEventListener('DOMContentLoaded', function() {
             calcularPercentuais();
             
-            // Verificar conectividade inicial (UMA VEZ)
-            await checkServerConnection();
+            // ❌ REMOVIDO: checkServerConnection() inicial - gasta bateria desnecessariamente
+            // Conectividade é verificada apenas quando necessário (ao salvar/sincronizar)
+            
+            // Setar status como offline por padrão (mais econômico)
+            isOnline = false;
             updateStatus();
             updateStorageInfo();
             adicionarBotoesGerenciamento();
             
             // ❌ REMOVIDO: setInterval de 5 minutos - causa superaquecimento
             // ❌ REMOVIDO: setInterval de 10 minutos - sincronização só manual agora
-            
             // ❌ REMOVIDO: auto-save em change/blur - causa loops infinitos
-            // Agora só salva quando clicar no botão "Salvar Avaliação"
+            // ❌ REMOVIDO: checkServerConnection inicial - economiza bateria
             
-            // Carregar rascunho na inicialização
+            // Carregar rascunho na inicialização (rápido, não faz fetch)
             carregarRascunho();
             
-            // Inicializar upload de fotos
+            // Inicializar upload de fotos (apenas prepara listeners)
             setupPhotoUpload();
             
             // Tornar removePhoto global
             window.removePhoto = removePhoto;
+            
+            console.log('⚡ App iniciado em modo OFFLINE (econômico)');
         });
 
-        // Auto-save com debounce para evitar escrita excessiva
-        let autoSaveTimeout;
-        function autoSave() {
-            // Cancelar save anterior se chamado muito rápido
-            clearTimeout(autoSaveTimeout);
-            
-            // Aguardar 2 segundos sem mudanças antes de salvar
-            autoSaveTimeout = setTimeout(() => {
-                const formData = {
-                    fazenda: document.getElementById('fazenda').value,
-                    talhao: document.getElementById('talhao').value,
-                    clone: document.getElementById('clone').value,
-                    dataPlantio: document.getElementById('dataPlantio').value,
-                    dataAvaliacao: document.getElementById('dataAvaliacao').value,
-                    mudasAvaliadas: document.getElementById('mudasAvaliadas').value,
-                    areaTalhao: document.getElementById('areaTalhao').value,
-                    areaAvaliada: document.getElementById('areaAvaliada').value,
-                    avaliador: document.getElementById('avaliador').value,
-                    viveiro: document.getElementById('viveiro').value,
-                    statusCarga: document.getElementById('statusCarga').value
-                };
-                
-                localStorage.setItem('formulario_rascunho', JSON.stringify(formData));
-            }, 2000); // 2 segundos de debounce
-        }
+        // ❌ REMOVIDO: autoSave - não é mais usado, economiza processamento
+        // Rascunho é salvo apenas no carregamento inicial (carregarRascunho)
 
         // Carregar rascunho salvo
         function carregarRascunho() {
