@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sobrevivencia-v3';
+const CACHE_NAME = 'sobrevivencia-v4-pwa';
 const urlsToCache = [
     '/coletor.html',
     '/manifest.json',

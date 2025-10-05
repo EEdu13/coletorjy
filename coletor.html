@@ -486,15 +486,15 @@
         // Calcular idade inicial
         calcularIdadePlantio();
 
-        // ❌ SERVICE WORKER DESABILITADO - Estava causando superaquecimento
-        // Remover todos os Service Workers existentes
+        // ✅ SERVICE WORKER REABILITADO (versão otimizada sem loops)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                for (let registration of registrations) {
-                    registration.unregister();
-                    console.log('🗑️ Service Worker removido para testes');
-                }
-            });
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker registrado:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('❌ Erro ao registrar SW:', error);
+                });
         }
 
         // Status e conectividade
